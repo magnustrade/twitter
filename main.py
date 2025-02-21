@@ -60,7 +60,7 @@ def scrape_data(url):
 
     return stock_signals
 
-def send_email(stock_signals, from_address, to_address, password, smtp_server, smtp_port=587):
+def send_email(stock_signals, from_address, to_address, password, smtp_server="smtp.gmail.com", smtp_port=587):
     if not stock_signals:
         return
 
@@ -82,10 +82,16 @@ def send_email(stock_signals, from_address, to_address, password, smtp_server, s
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'plain'))
 
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
-        server.login(from_address, password)
-        server.sendmail(from_address, to_address, msg.as_string())
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()  # TLS şifrelemesini başlat
+            server.login(from_address, password)
+            server.sendmail(from_address, to_address, msg.as_string())
+        print("E-posta başarıyla gönderildi!")
+    except smtplib.SMTPAuthenticationError:
+        print("Hata: Kimlik doğrulama başarısız. E-posta veya şifre yanlış olabilir.")
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
 
 if __name__ == "__main__":
     EMAIL_USER = os.environ['EMAIL_USER']
