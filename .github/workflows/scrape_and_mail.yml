@@ -30,4 +30,4 @@ jobs:
           SMTP_SERVER: smtp.gmail.com
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
         run: |
-          python scrape_and_mail.py
+          python main.py
