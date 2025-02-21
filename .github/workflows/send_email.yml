@@ -1,0 +1,31 @@
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Debug environment variables
+        run: |
+          echo "EMAIL_USER: ${{ secrets.EMAIL_USER }}"
+          echo "SMTP_SERVER: ${{ secrets.SMTP_SERVER }}"
+          echo "TO_EMAIL: ${{ secrets.TO_EMAIL }}"
+
+      - name: Run Python script to send email
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: |
+          python main.py
