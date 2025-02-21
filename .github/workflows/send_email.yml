@@ -1,10 +1,7 @@
-name: Send Email
+name: Send Email with git send-email
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_dispatch:  # Manuel olarak tetiklemek için
 
 jobs:
   send-email:
@@ -14,27 +11,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
+      - name: Install git and sendmail
         run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
+          sudo apt-get update
+          sudo apt-get install -y git sendmail
 
-      - name: Debug environment variables
+      - name: Configure git send-email
         run: |
-          echo "EMAIL_USER: ${{ secrets.EMAIL_USER }}"
-          echo "SMTP_SERVER: ${{ secrets.SMTP_SERVER }}"
-          echo "TO_EMAIL: ${{ secrets.TO_EMAIL }}"
+          git config --global sendemail.smtpserver smtp.gmail.com
+          git config --global sendemail.smtpserverport 587
+          git config --global sendemail.smtpencryption tls
+          git config --global sendemail.smtpuser ${{ secrets.EMAIL_USER }}
+          git config --global sendemail.smtppass ${{ secrets.EMAIL_PASSWORD }}
 
-      - name: Run Python script to send email
-        env:
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+      - name: Create a sample patch file
         run: |
-          python main-test.py
+          echo "This is a test patch." > test.patch
+          git add test.patch
+          git commit -m "Add test patch"
+
+      - name: Send email with git send-email
+        run: |
+          git format-patch -1 --stdout | git send-email \
+            --to="${{ secrets.TO_EMAIL }}" \
+            --from="${{ secrets.EMAIL_USER }}" \
+            --smtp-server="smtp.gmail.com" \
+            --smtp-server-port=587 \
+            --smtp-encryption=tls \
+            --smtp-user="${{ secrets.EMAIL_USER }}" \
+            --smtp-pass="${{ secrets.EMAIL_PASSWORD }}" \
+            -
