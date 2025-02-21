@@ -11,28 +11,46 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install sendmail
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sendmail
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-      - name: Configure sendmail
+      - name: Install dependencies
         run: |
-          echo 'define(`SMART_HOST', `smtp.gmail.com')' | sudo tee -a /etc/mail/sendmail.mc
-          echo 'define(`RELAY_MAILER_ARGS', `TCP $h 587')' | sudo tee -a /etc/mail/sendmail.mc
-          echo 'define(`ESMTP_MAILER_ARGS', `TCP $h 587')' | sudo tee -a /etc/mail/sendmail.mc
-          echo 'define(`confAUTH_MECHANISMS', `EXTERNAL GSSAPI DIGEST-MD5 CRAM-MD5 LOGIN PLAIN')' | sudo tee -a /etc/mail/sendmail.mc
-          sudo make -C /etc/mail
-          sudo systemctl restart sendmail
+          python -m pip install --upgrade pip
 
-      - name: Send test email with sendmail
+      - name: Send test email with Python
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
         run: |
-          echo "Subject: Test E-postası" > email.txt
-          echo "From: $EMAIL_USER" >> email.txt
-          echo "To: $TO_EMAIL" >> email.txt
-          echo "" >> email.txt
-          echo "Bu e-posta GitHub Actions üzerinden gönderilmiştir." >> email.txt
-          sendmail -f "$EMAIL_USER" "$TO_EMAIL" < email.txt
+          python -c "
+          import os
+          import smtplib
+          from email.mime.multipart import MIMEMultipart
+          from email.mime.text import MIMEText
+
+          EMAIL_USER = os.environ['EMAIL_USER']
+          EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
+          SMTP_SERVER = os.environ['SMTP_SERVER']
+          TO_EMAIL = os.environ['TO_EMAIL']
+
+          msg = MIMEMultipart()
+          msg['From'] = EMAIL_USER
+          msg['To'] = TO_EMAIL
+          msg['Subject'] = 'Test E-postası'
+          body = 'Bu e-posta GitHub Actions üzerinden gönderilmiştir.'
+          msg.attach(MIMEText(body, 'plain'))
+
+          try:
+              with smtplib.SMTP(SMTP_SERVER, 587) as server:
+                  server.starttls()
+                  server.login(EMAIL_USER, EMAIL_PASSWORD)
+                  server.sendmail(EMAIL_USER, TO_EMAIL, msg.as_string())
+              print('E-posta başarıyla gönderildi!')
+          except Exception as e:
+              print(f'Hata oluştu: {e}')
+          "
