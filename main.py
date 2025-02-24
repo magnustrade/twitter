@@ -40,9 +40,19 @@ def scrape_data(url):
     rows = table.find_all('tr')[1:]  # Skip the header row
 
     stock_signals = []
-    # Şu anki tarihi al ve son 3 günün sınırını hesapla
+    # Şu anki tarihi al ve son 3 iş gününün sınırını hesapla
     today = datetime.now()
-    three_days_ago = today - timedelta(days=3)
+    business_days_count = 0
+    days_back = 0
+    three_business_days_ago = None
+
+    while business_days_count < 3:
+        current_date = today - timedelta(days=days_back)
+        # Hafta içi mi kontrol et (0-4: Pazartesi-Cuma)
+        if current_date.weekday() < 5:
+            business_days_count += 1
+        days_back += 1
+    three_business_days_ago = today - timedelta(days=days_back)
 
     for row in rows:
         cols = row.find_all('td')
@@ -54,8 +64,8 @@ def scrape_data(url):
         # Tarih string'ini datetime objesine çevir (format: "YYYY-MM-DD HH:MM:SS")
         try:
             date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-            # Tarih son 3 gün içindeyse ekle
-            if date >= three_days_ago:
+            # Tarih son 3 iş günü içindeyse ekle
+            if date >= three_business_days_ago:
                 if stock in STOCK_LIST:
                     stock_signals.append({
                         "stock": stock,
