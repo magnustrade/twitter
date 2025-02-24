@@ -27,7 +27,7 @@ jobs:
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          SMTP_SERVER: smtp.gmail.com
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
         run: |
           python main.py
