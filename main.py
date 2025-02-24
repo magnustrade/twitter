@@ -54,10 +54,9 @@ def scrape_data(url):
         signal_price = cols[2].text.strip()
         date_str = cols[3].text.strip()
 
-        # Tarih string'ini datetime objesine çevir
-        # Varsayım: Tarih formatı "DD.MM.YYYY" (örneğin, "24.02.2025")
+        # Tarih string'ini datetime objesine çevir (format: "YYYY-MM-DD HH:MM:SS")
         try:
-            date = datetime.strptime(date_str, "%d.%m.%Y")
+            date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             # Tarih son 3 gün içindeyse ekle
             if date >= three_days_ago:
                 if stock in STOCK_LIST:
