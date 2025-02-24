@@ -40,7 +40,6 @@ def scrape_data(url):
     rows = table.find_all('tr')[1:]  # Skip the header row
 
     stock_signals = []
-    # Şu anki tarihi al ve son 3 iş gününün sınırını hesapla
     today = datetime.now()
     business_days_count = 0
     days_back = 0
@@ -48,8 +47,7 @@ def scrape_data(url):
 
     while business_days_count < 3:
         current_date = today - timedelta(days=days_back)
-        # Hafta içi mi kontrol et (0-4: Pazartesi-Cuma)
-        if current_date.weekday() < 5:
+        if current_date.weekday() < 5:  # Cumartesi (5) ve Pazar (6) hariç
             business_days_count += 1
         days_back += 1
     three_business_days_ago = today - timedelta(days=days_back)
@@ -61,17 +59,15 @@ def scrape_data(url):
         signal_price = cols[2].text.strip()
         date_str = cols[3].text.strip()
 
-        # Tarih string'ini datetime objesine çevir (format: "YYYY-MM-DD HH:MM:SS")
         try:
             date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-            # Tarih son 3 iş günü içindeyse ekle
             if date >= three_business_days_ago:
                 if stock in STOCK_LIST:
                     stock_signals.append({
                         "stock": stock,
                         "support_price": support_price,
                         "signal_price": signal_price,
-                        "date": date_str  # Orijinal string formatında tutuyoruz
+                        "date": date_str
                     })
         except ValueError as e:
             print(f"Tarih formatı hatalı: {date_str}, hata: {e}")
@@ -79,14 +75,31 @@ def scrape_data(url):
 
     return stock_signals
 
-def send_email(stock_signals, from_address, to_address, password, smtp_server="smtp.gmail.com", smtp_port=465):
+def is_valid_email(email):
+    """Basit bir e-posta adresi doğrulama fonksiyonu."""
+    if not email or '@' not in email or '.' not in email.split('@')[-1]:
+        return False
+    return True
+
+def send_email(stock_signals, from_address, to_addresses, password, smtp_server="smtp.gmail.com", smtp_port=465):
     if not stock_signals:
         print("Gönderilecek sinyal yok.")
         return
 
-    if not all([from_address, to_address, password, smtp_server]):
+    if not all([from_address, to_addresses, password, smtp_server]):
         print("Hata: E-posta bilgileri eksik.")
         return
+
+    # Geçerli e-posta adreslerini filtrele
+    valid_to_addresses = [email for email in to_addresses if is_valid_email(email)]
+    if not valid_to_addresses:
+        print("Hata: Hiçbir geçerli alıcı adresi bulunamadı.")
+        return
+
+    # Geçersiz adresleri bildir
+    invalid_addresses = set(to_addresses) - set(valid_to_addresses)
+    if invalid_addresses:
+        print(f"Geçersiz e-posta adresleri tespit edildi ve hariç tutuldu: {invalid_addresses}")
 
     now = datetime.now()
     date_str = now.strftime("%d.%m.%Y %H:%M")
@@ -102,15 +115,17 @@ def send_email(stock_signals, from_address, to_address, password, smtp_server="s
 
     msg = MIMEMultipart()
     msg['From'] = from_address
-    msg['To'] = to_address
+    msg['To'] = ", ".join(valid_to_addresses)  # Geçerli adresleri birleştir
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'plain'))
 
     try:
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(from_address, password)
-            server.sendmail(from_address, to_address, msg.as_string())
+            server.sendmail(from_address, valid_to_addresses, msg.as_string())
         print("E-posta başarıyla gönderildi!")
+    except smtplib.SMTPRecipientsRefused as e:
+        print(f"Hata: Alıcı adresleri reddedildi: {e.recipients}")
     except smtplib.SMTPAuthenticationError:
         print("Hata: Kimlik doğrulama başarısız. E-posta veya şifre yanlış olabilir.")
     except Exception as e:
@@ -125,5 +140,8 @@ if __name__ == "__main__":
     if not all([EMAIL_USER, EMAIL_PASSWORD, SMTP_SERVER, TO_EMAIL]):
         print("Hata: Ortam değişkenlerinden biri eksik.")
     else:
+        # TO_EMAIL'i virgülle ayrılmış string'den listeye çevir
+        to_email_list = [email.strip() for email in TO_EMAIL.split(',')]
+        print(f"TO_EMAIL listesi: {to_email_list}")  # Hata ayıklamak için
         stock_signals = scrape_data("https://www.matematikrehberim.com/dipavcisi/agresifhissesignal.php")
-        send_email(stock_signals, EMAIL_USER, TO_EMAIL, EMAIL_PASSWORD, SMTP_SERVER)
+        send_email(stock_signals, EMAIL_USER, to_email_list, EMAIL_PASSWORD, SMTP_SERVER)
