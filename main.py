@@ -4,7 +4,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # author: @dipavcisi0007
 # edited by: @therkut
@@ -43,25 +43,43 @@ def scrape_data(url):
     rows = table.find_all('tr')[1:]  # Skip the header row
 
     stock_signals = []
+    # Şu anki tarihi al ve son 3 günün sınırını hesapla
+    today = datetime.now()
+    three_days_ago = today - timedelta(days=3)
+
     for row in rows:
         cols = row.find_all('td')
         stock = cols[0].text.strip()
         support_price = cols[1].text.strip()
         signal_price = cols[2].text.strip()
-        date = cols[3].text.strip()
+        date_str = cols[3].text.strip()
 
-        if stock in STOCK_LIST:
-            stock_signals.append({
-                "stock": stock,
-                "support_price": support_price,
-                "signal_price": signal_price,
-                "date": date
-            })
+        # Tarih string'ini datetime objesine çevir
+        # Varsayım: Tarih formatı "DD.MM.YYYY" (örneğin, "24.02.2025")
+        try:
+            date = datetime.strptime(date_str, "%d.%m.%Y")
+            # Tarih son 3 gün içindeyse ekle
+            if date >= three_days_ago:
+                if stock in STOCK_LIST:
+                    stock_signals.append({
+                        "stock": stock,
+                        "support_price": support_price,
+                        "signal_price": signal_price,
+                        "date": date_str  # Orijinal string formatında tutuyoruz
+                    })
+        except ValueError as e:
+            print(f"Tarih formatı hatalı: {date_str}, hata: {e}")
+            continue
 
     return stock_signals
 
 def send_email(stock_signals, from_address, to_address, password, smtp_server="smtp.gmail.com", smtp_port=465):
     if not stock_signals:
+        print("Gönderilecek sinyal yok.")
+        return
+
+    if not all([from_address, to_address, password, smtp_server]):
+        print("Hata: E-posta bilgileri eksik.")
         return
 
     now = datetime.now()
@@ -83,7 +101,7 @@ def send_email(stock_signals, from_address, to_address, password, smtp_server="s
     msg.attach(MIMEText(body, 'plain'))
 
     try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:  # SMTP_SSL kullanıyoruz
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(from_address, password)
             server.sendmail(from_address, to_address, msg.as_string())
         print("E-posta başarıyla gönderildi!")
@@ -95,9 +113,11 @@ def send_email(stock_signals, from_address, to_address, password, smtp_server="s
 if __name__ == "__main__":
     EMAIL_USER = os.environ.get('EMAIL_USER')
     EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
-    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')  # Varsayılan smtp.gmail.com
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
     TO_EMAIL = os.environ.get('TO_EMAIL')
-    URL = "https://www.matematikrehberim.com/dipavcisi/agresifhissesignal.php"
 
-    stock_signals = scrape_data(URL)
-    send_email(stock_signals, EMAIL_USER, TO_EMAIL, EMAIL_PASSWORD, SMTP_SERVER)
+    if not all([EMAIL_USER, EMAIL_PASSWORD, SMTP_SERVER, TO_EMAIL]):
+        print("Hata: Ortam değişkenlerinden biri eksik.")
+    else:
+        stock_signals = scrape_data("https://www.matematikrehberim.com/dipavcisi/agresifhissesignal.php")
+        send_email(stock_signals, EMAIL_USER, TO_EMAIL, EMAIL_PASSWORD, SMTP_SERVER)
