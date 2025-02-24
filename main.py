@@ -83,21 +83,20 @@ def send_email(stock_signals, from_address, to_address, password, smtp_server="s
     msg.attach(MIMEText(body, 'plain'))
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()  # TLS şifrelemesini başlat
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:  # SMTP_SSL kullanıyoruz
             server.login(from_address, password)
             server.sendmail(from_address, to_address, msg.as_string())
         print("E-posta başarıyla gönderildi!")
     except smtplib.SMTPAuthenticationError:
         print("Hata: Kimlik doğrulama başarısız. E-posta veya şifre yanlış olabilir.")
     except Exception as e:
-        print(f"Hata oluştu: {e}")
+        print(f"Hata oluştu: {type(e).__name__} - {str(e)}")
 
 if __name__ == "__main__":
-    EMAIL_USER = os.environ['EMAIL_USER']
-    EMAIL_PASSWORD = os.environ['EMAIL_PASSWORD']
-    SMTP_SERVER = os.environ['SMTP_SERVER']
-    TO_EMAIL = os.environ['TO_EMAIL']
+    EMAIL_USER = os.environ.get('EMAIL_USER')
+    EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')  # Varsayılan smtp.gmail.com
+    TO_EMAIL = os.environ.get('TO_EMAIL')
     URL = "https://www.matematikrehberim.com/dipavcisi/agresifhissesignal.php"
 
     stock_signals = scrape_data(URL)
