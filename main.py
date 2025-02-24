@@ -60,7 +60,7 @@ def scrape_data(url):
 
     return stock_signals
 
-def send_email(stock_signals, from_address, to_address, password, smtp_server="smtp.gmail.com", smtp_port=587):
+def send_email(stock_signals, from_address, to_address, password, smtp_server="smtp.gmail.com", smtp_port=465):
     if not stock_signals:
         return
 
