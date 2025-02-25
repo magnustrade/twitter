@@ -6,31 +6,19 @@ from email.mime.text import MIMEText
 import os
 from datetime import datetime, timedelta
 
-# author: @dipavcisi0007
-# edited by: @therkut
-# BIST Pay Endeksleri 
-# **** Katılım ****
-
-STOCK_LIST = [
-    "ACSEL", "ADESE", "AHSGY", "AKCNS", "AKSA", "AKSEN", "AKYHO", "ALBRK", "ALCTL", "ALKA", "ALKIM", "ALKLC", "ALTNY",
-    "ALVES", "ANGEN", "ARASE", "ARDYZ", "ARENA", "ASELS", "ASUZU", "ATAKP", "ATATP", "ATEKS", "AVGYO", "AVPGY", "BAHKM",
-    "BAKAB", "BANVT", "BASGZ", "BAYRK", "BERA", "BEYAZ", "BIENY", "BIMAS", "BINHO", "BMSTL", "BORLS", "BORSK", "BOSSA",
-    "BRKSN", "BRLSM", "BSOKE", "BUCIM", "BURCE", "BURVA", "CANTE", "CEMAS", "CEMTS", "CMBTN", "COSMO", "CUSAN", "CWENE",
-    "DAGHL", "DARDL", "DCTTR", "DESPC", "DGATE", "DGNMO", "DMRGD", "DOAS", "DOBUR", "DOFER", "DYOBY", "EBEBK", "EDATA",
-    "EDIP", "EGEPO", "EGGUB", "EGPRO", "EKSUN", "ELITE", "ENJSA", "ERCB", "EREGL", "ESCOM", "ESEN", "EUPWR", "EYGYO",
-    "FADE", "FMIZP", "FONET", "FORMT", "FZLGY", "GEDZA", "GENIL", "GENTS", "GEREL", "GOKNR", "GOLTS", "GOODY", "GRSEL",
-    "GRTRK", "GUBRF", "GUNDG", "GWIND", "HATSN", "HKTM", "HOROZ", "HRKET", "HTTBT", "HUNER", "IDGYO", "IHEVA", "IHGZT",
-    "IHLAS", "IHLGM", "IHYAY", "IMASM", "INGRM", "INTEM", "ISDMR", "ISKPL", "ISSEN", "IZFAS", "IZINV", "JANTS", "KAREL",
-    "KATMR", "KAYSE", "KCAER", "KGYO", "KIMMR", "KLSYN", "KNFRT", "KONKA", "KONYA", "KOPOL", "KOTON", "KRDMA", "KRDMB",
-    "KRDMD", "KRGYO", "KRONT", "KRPLS", "KRSTL", "KRVGD", "KTLEV", "KUTPO", "KUYAS", "KZBGY", "LILAK", "LKMNH", "LMKDC",
-    "LOGO", "LRSHO", "LUKSK", "MAGEN", "MAKIM", "MANAS", "MARBL", "MARKA", "MAVI", "MEDTR", "MEGAP", "MEKAG", "MERCN",
-    "MERKO", "MIATK", "MIPAZ", "MNDRS", "MNDTR", "MOBTL", "MPARK", "NATEN", "NETAS", "NTGAZ", "NUHCM", "OBAMS", "OBASE",
-    "ONCSM", "ORCAY", "ORGE", "OSTIM", "OYAKC", "OZATD", "OZRDN", "OZSUB", "OZYSR", "PARSN", "PASEU", "PEHOL", "PEKGY",
-    "PENGD", "PENTA", "PETKM", "PETUN", "PKART", "PLTUR", "PNSUT", "POLHO", "PRKAB", "QUAGR", "RALYH", "RODRG", "RUBNS",
-    "SAFKR", "SAMAT", "SANKO", "SAYAS", "SEGMN", "SEKUR", "SELEC", "SELVA", "SILVR", "SMART", "SMRTG", "SNGYO", "SNICA",
-    "SOKE", "SRVGY", "SUNTK", "SURGY", "SUWEN", "TCKRC", "TDGYO", "TEZOL", "TKFEN", "TNZTP", "TUCLK", "TUKAS", "TUPRS",
-    "TUREX", "ULUSE", "USAK", "VAKKO", "VANGD", "VBTYZ", "VESBE", "VESTL", "YATAS", "YEOTK", "YUNSA", "ZEDUR"
-]
+def load_stock_list(file_path="data/stock.txt"):
+    """stock.txt dosyasından hisse listesini yükler (her satır bir hisse)."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            # Satır satır oku, boşlukları ve virgülleri temizle
+            stock_list = [line.strip().strip(',') for line in file.readlines() if line.strip()]
+            return stock_list
+    except FileNotFoundError:
+        print(f"Hata: {file_path} dosyası bulunamadı.")
+        return []
+    except Exception as e:
+        print(f"Hata: Dosya okunurken bir sorun oluştu: {e}")
+        return []
 
 def scrape_data(url):
     response = requests.get(url)
@@ -51,6 +39,8 @@ def scrape_data(url):
             business_days_count += 1
         days_back += 1
     three_business_days_ago = today - timedelta(days=days_back)
+
+    STOCK_LIST = load_stock_list()  # STOCK_LIST'i dosya üzerinden yükle
 
     for row in rows:
         cols = row.find_all('td')
@@ -76,12 +66,11 @@ def scrape_data(url):
     return stock_signals
 
 def is_valid_email(email):
-    """Basit bir e-posta adresi doğrulama fonksiyonu."""
     if not email or '@' not in email or '.' not in email.split('@')[-1]:
         return False
     return True
 
-def send_email(stock_signals, from_address, to_addresses, password, smtp_server="smtp.gmail.com", smtp_port=465):
+def send_email(stock_signals, from_name, from_address, to_addresses, password, smtp_server="smtp.gmail.com", smtp_port=465):
     if not stock_signals:
         print("Gönderilecek sinyal yok.")
         return
@@ -90,34 +79,77 @@ def send_email(stock_signals, from_address, to_addresses, password, smtp_server=
         print("Hata: E-posta bilgileri eksik.")
         return
 
-    # Geçerli e-posta adreslerini filtrele
     valid_to_addresses = [email for email in to_addresses if is_valid_email(email)]
     if not valid_to_addresses:
         print("Hata: Hiçbir geçerli alıcı adresi bulunamadı.")
         return
 
-    # Geçersiz adresleri bildir
     invalid_addresses = set(to_addresses) - set(valid_to_addresses)
     if invalid_addresses:
         print(f"Geçersiz e-posta adresleri tespit edildi ve hariç tutuldu: {invalid_addresses}")
 
     now = datetime.now()
     date_str = now.strftime("%d.%m.%Y %H:%M")
-    subject = "Agresif Hisse Taraması Günlük Sinyalleri"
-    body = f"Engulfing Candles Tarama {date_str}\n\n"
+    current_year = now.strftime("%Y")
 
-    for signal in stock_signals:
-        body += f"Hisse: {signal['stock']}\n"
-        body += f"Destek Fiyatı: {signal['support_price']}\n"
-        body += f"Signal Fiyatı: {signal['signal_price']}\n"
-        body += f"Tarih: {signal['date']}\n\n"
-        body += f"------------------------\n\n"
+    html_body = f"""
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px;">
+        <tbody>
+            <tr>
+                <td style="padding:25px; text-align:center;">
+                    <h2 style="margin:0; font-size:24px; color:#333;">Engulfing Candles Tarama {date_str}</h2>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:20px;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                        <tbody>
+                            <tr style="background-color:#f5f5f5;">
+                                <th style="padding:12px 8px; border:1px solid #e0e0e0; font-size:12px; font-weight:600; color:#2c3e50;">Hisse</th>
+                                <th style="padding:12px 8px; border:1px solid #e0e0e0; font-size:12px; font-weight:600; color:#2c3e50;">Destek Fiyatı</th>
+                                <th style="padding:12px 8px; border:1px solid #e0e0e0; font-size:12px; font-weight:600; color:#2c3e50;">Signal Fiyatı</th>
+                                <th style="padding:12px 8px; border:1px solid #e0e0e0; font-size:12px; font-weight:600; color:#2c3e50;">Tarih</th>
+                            </tr>
+    """
+
+    for i, signal in enumerate(stock_signals):
+        row_bg = "#f8f9fa" if i % 2 == 0 else "#ffffff"
+        html_body += f"""
+                            <tr style="background-color:{row_bg};">
+                                <td style="padding:12px 8px; border:1px solid #e0e0e0; text-align:center;"><strong>{signal['stock']}</strong></td>
+                                <td style="padding:12px 8px; border:1px solid #e0e0e0; text-align:center;">{signal['support_price']}</td>
+                                <td style="padding:12px 8px; border:1px solid #e0e0e0; text-align:center;">{signal['signal_price']}</td>
+                                <td style="padding:12px 8px; border:1px solid #e0e0e0; text-align:center;">{signal['date']}</td>
+                            </tr>
+        """
+
+    html_body += f"""
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:20px;">
+                    <div style="background-color:#fff3e0; padding:15px; border-radius:8px; text-align:center; color:#e65100; font-size:13px; font-weight:600;">
+                        ⚠️ YASAL UYARI: Bu rapor bilgilendirme amaçlıdır, yatırım tavsiyesi içermez.
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="background-color:#f5f5f5; padding:20px; text-align:center; border-top:1px solid #e0e0e0;">
+                    <p style="margin:0 0 10px 0; font-size:12px; color:#666;">Bu e-posta otomatik olarak gönderilmiştir. Lütfen yanıt vermeyiniz.</p>
+                    <p style="margin:0; font-size:12px; color:#666;">© {current_year} by Magnus Trade</p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    """
 
     msg = MIMEMultipart()
-    msg['From'] = from_address
-    msg['To'] = ", ".join(valid_to_addresses)  # Geçerli adresleri birleştir
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
+    msg['From'] = f"{from_name} <{from_address}>"
+    msg['To'] = ", ".join(valid_to_addresses)
+    msg['Subject'] = "📊 Agresif Hisse Taraması Günlük Sinyalleri"
+    msg.attach(MIMEText(html_body, 'html'))
 
     try:
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
@@ -136,12 +168,13 @@ if __name__ == "__main__":
     EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
     SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
     TO_EMAIL = os.environ.get('TO_EMAIL')
+    SCRAPE_URL = os.environ.get('SCRAPE_URL')
+    FROM_NAME = "Magnus Trade"
 
-    if not all([EMAIL_USER, EMAIL_PASSWORD, SMTP_SERVER, TO_EMAIL]):
+    if not all([EMAIL_USER, EMAIL_PASSWORD, SMTP_SERVER, TO_EMAIL, SCRAPE_URL]):
         print("Hata: Ortam değişkenlerinden biri eksik.")
     else:
-        # TO_EMAIL'i virgülle ayrılmış string'den listeye çevir
         to_email_list = [email.strip() for email in TO_EMAIL.split(',')]
-        print(f"TO_EMAIL listesi: {to_email_list}")  # Hata ayıklamak için
-        stock_signals = scrape_data("https://www.matematikrehberim.com/dipavcisi/agresifhissesignal.php")
-        send_email(stock_signals, EMAIL_USER, to_email_list, EMAIL_PASSWORD, SMTP_SERVER)
+        print(f"TO_EMAIL listesi: {to_email_list}")
+        stock_signals = scrape_data(SCRAPE_URL)
+        send_email(stock_signals, FROM_NAME, EMAIL_USER, to_email_list, EMAIL_PASSWORD, SMTP_SERVER)
