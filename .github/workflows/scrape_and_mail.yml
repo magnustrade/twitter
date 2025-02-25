@@ -2,8 +2,8 @@ name: Scrape and Send Email
 
 on:
   schedule:
-    - cron: '30 15 * * *' # 18:30 Türkiye saati (UTC+3)
-  workflow_dispatch: # Manuel tetikleme için
+    - cron: '30 15 * * *' # Türkiye saatiyle 18:30 (UTC 15:30)
+  workflow_dispatch:
 
 jobs:
   scrape_and_mail:
@@ -29,5 +29,6 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          SCRAPE_URL: ${{ secrets.SCRAPE_URL }} 
         run: |
           python main.py
