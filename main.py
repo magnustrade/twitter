@@ -1,3 +1,9 @@
+# author: @dipavcisi0007
+# source: https://x.com/dipAVCISI007/status/1894070221469577311
+# edited by: @therkut
+# BIST Pay Endeksleri 
+# **** Katılım ****
+
 import requests
 from bs4 import BeautifulSoup
 import smtplib
@@ -10,7 +16,6 @@ def load_stock_list(file_path="data/stock.txt"):
     """stock.txt dosyasından hisse listesini yükler (her satır bir hisse)."""
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
-            # Satır satır oku, boşlukları ve virgülleri temizle
             stock_list = [line.strip().strip(',') for line in file.readlines() if line.strip()]
             return stock_list
     except FileNotFoundError:
@@ -40,7 +45,7 @@ def scrape_data(url):
         days_back += 1
     three_business_days_ago = today - timedelta(days=days_back)
 
-    STOCK_LIST = load_stock_list()  # STOCK_LIST'i dosya üzerinden yükle
+    STOCK_LIST = load_stock_list()
 
     for row in rows:
         cols = row.find_all('td')
@@ -89,7 +94,7 @@ def send_email(stock_signals, from_name, from_address, to_addresses, password, s
         print(f"Geçersiz e-posta adresleri tespit edildi ve hariç tutuldu: {invalid_addresses}")
 
     now = datetime.now()
-    date_str = now.strftime("%d.%m.%Y %H:%M")
+    date_str = now.strftime("%d.%m.%Y")  # Sadece tarih, saat yok
     current_year = now.strftime("%Y")
 
     html_body = f"""
