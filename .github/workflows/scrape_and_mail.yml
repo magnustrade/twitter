@@ -2,7 +2,7 @@ name: Scrape and Send Email
 
 on:
   schedule:
-    - cron: '30 15 * * *' # Türkiye saatiyle 18:30 (UTC 15:30)
+    - cron: '45 15 * * *' # Türkiye saatiyle 18:45 (UTC 15:45)
   workflow_dispatch:
 
 jobs:
