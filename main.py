@@ -52,7 +52,7 @@ def scrape_data(url):
         stock = cols[0].text.strip()
         support_price = cols[1].text.strip()
         signal_price = cols[2].text.strip()
-        date_str = cols[3].text.strip()
+        date_str = cols[4].text.strip()
 
         try:
             date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
