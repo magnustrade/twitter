@@ -11,18 +11,21 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
 from datetime import datetime, timedelta
+import pandas as pd
 
-def load_stock_list(file_path="data/stock.txt"):
-    """stock.txt dosyasından hisse listesini yükler (her satır bir hisse)."""
+def load_stock_list(url="https://raw.githubusercontent.com/therkut/bistLists/refs/heads/main/data/stock_xktum_data.csv"):
+    """
+    Belirtilen CSV adresinden 'stock' sütunundaki hisse listesini çeker.
+    """
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            stock_list = [line.strip().strip(',') for line in file.readlines() if line.strip()]
-            return stock_list
-    except FileNotFoundError:
-        print(f"Hata: {file_path} dosyası bulunamadı.")
-        return []
+        df = pd.read_csv(url)
+        if 'stock' not in df.columns:
+            print("Hata: 'stock' sütunu bulunamadı.")
+            return []
+        stock_list = df['stock'].dropna().astype(str).str.strip().tolist()
+        return stock_list
     except Exception as e:
-        print(f"Hata: Dosya okunurken bir sorun oluştu: {e}")
+        print(f"Hata: Hisse listesi çekilemedi: {e}")
         return []
 
 def scrape_data(url):
