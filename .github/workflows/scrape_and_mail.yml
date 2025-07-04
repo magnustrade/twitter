@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
+          pip install requests beautifulsoup4 pandas
 
       - name: Run scrape and mail script
         env:
@@ -29,6 +29,6 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
-          SCRAPE_URL: ${{ secrets.SCRAPE_URL }} 
+          SCRAPE_URL: ${{ secrets.SCRAPE_URL }}
         run: |
           python main.py
