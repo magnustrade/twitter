@@ -4,14 +4,14 @@
 # BIST Pay Endeksleri 
 # **** Katılım ****
 
-import requests
-from bs4 import BeautifulSoup
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import os
-from datetime import datetime, timedelta
+import smtplib
+import requests
 import pandas as pd
+from bs4 import BeautifulSoup
+from email.mime.text import MIMEText
+from datetime import datetime, timedelta
+from email.mime.multipart import MIMEMultipart
 
 def load_stock_list(url="https://raw.githubusercontent.com/therkut/bistLists/refs/heads/main/data/stock_xktum_data.csv"):
     """
